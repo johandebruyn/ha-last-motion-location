@@ -111,15 +111,3 @@ action:
         {% endfor %}
 
 mode: single  # Ensures only one instance of this automation runs at a time
-
-# Input fields to store data
-input_text:
-  last_motion_location:
-    name: "Last Motion Location"
-    initial: ""
-
-input_datetime:
-  last_motion_time:
-    name: "Last Motion Time"
-    has_time: true
-    has_date: false
