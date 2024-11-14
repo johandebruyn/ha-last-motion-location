@@ -7,8 +7,8 @@ blueprint:
   domain: automation
   input:
     motion_sensors:
-      name: Motion Sensors
-      description: Select motion sensors to monitor.
+      name: Motion and Occupancy Sensors
+      description: Select motion and occupancy sensors to monitor.
       selector:
         entity:
           domain: binary_sensor
@@ -65,7 +65,12 @@ variables:
   sensor_name_map: >
     {% set sensors = motion_sensors.split(',') %}
     {% set names = sensor_display_names.split(',') %}
-    {% set mapping = dict(sensors|zip(names)) %}
+    {% set mapping = {} %}
+    {% for i in range(0, sensors | length) %}
+      {% set sensor = sensors[i] %}
+      {% set name = names[i] if i < names | length else "Unnamed Sensor" %}
+      {% set mapping = mapping | merge({sensor: name}) %}
+    {% endfor %}
     {{ mapping }}
 
 trigger:
