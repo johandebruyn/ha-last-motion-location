@@ -1,0 +1,97 @@
+blueprint:
+  name: Last Motion Location Badge
+  description: Display a badge with the location of the last detected motion. The badge disappears after a set time without motion and can be configured based on presence.
+  domain: automation
+  input:
+    motion_sensors:
+      name: Motion Sensors
+      description: Select the motion sensors to monitor (e.g., cameras or motion detectors).
+      selector:
+        entity:
+          domain: binary_sensor
+          device_class: motion
+          multiple: true
+
+    display_duration:
+      name: Display Duration
+      description: How long the badge should remain visible after the last motion is detected (in minutes).
+      default: 10
+      selector:
+        number:
+          min: 1
+          max: 60
+          unit_of_measurement: minutes
+
+    badge_text:
+      name: Badge Text
+      description: The text to display on the badge (e.g., location of the motion).
+      default: "Last motion detected at"
+      selector:
+        text:
+
+    presence_option:
+      name: Presence Option
+      description: Choose when the badge should be visible: when someone is home, no one is home, or always.
+      default: "always"
+      selector:
+        select:
+          options:
+            - "always"
+            - "someone_home"
+            - "no_one_home"
+
+    person_entity:
+      name: Person Entity
+      description: The person entity to monitor for presence status.
+      selector:
+        entity:
+          domain: person
+
+variables:
+  motion_sensors: !input motion_sensors
+  display_duration: !input display_duration
+  badge_text: !input badge_text
+  presence_option: !input presence_option
+  person_entity: !input person_entity
+
+trigger:
+  - platform: state
+    entity_id: !input motion_sensors
+    to: 'on'
+
+condition:
+  - condition: template
+    value_template: >
+      {% if presence_option == 'always' %}
+        true
+      {% elif presence_option == 'someone_home' %}
+        {{ is_state(person_entity, 'home') }}
+      {% elif presence_option == 'no_one_home' %}
+        {{ is_state(person_entity, 'not_home') }}
+      {% else %}
+        false
+      {% endif %}
+
+action:
+  - service: input_datetime.set_datetime
+    target:
+      entity_id: input_datetime.last_motion_time
+    data:
+      timestamp: "{{ now().timestamp() }}"
+  - service: input_text.set_value
+    target:
+      entity_id: input_text.last_motion_location
+    data:
+      value: >
+        {% set motion_map = {
+          'binary_sensor.motion_kitchen': 'Kitchen',
+          'binary_sensor.motion_living_room': 'Living Room',
+          'binary_sensor.motion_hallway': 'Hallway'
+        } %}
+        {% for sensor in motion_sensors %}
+          {% if is_state(sensor, 'on') %}
+            {{ motion_map[sensor] }}
+          {% endif %}
+        {% endfor %}
+
+mode: single
