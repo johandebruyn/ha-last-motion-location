@@ -20,7 +20,7 @@ blueprint:
       description: Provide display names for each selected motion sensor (comma-separated, matching the order of sensors).
       default: ""
       selector:
-        text
+        text: {}
 
     display_duration:
       name: Display Duration
@@ -37,7 +37,7 @@ blueprint:
       description: The text to display on the badge.
       default: "Last motion detected at"
       selector:
-        text
+        text: {}
 
     presence_option:
       name: Presence Option
