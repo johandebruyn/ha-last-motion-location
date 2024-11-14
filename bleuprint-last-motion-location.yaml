@@ -31,7 +31,7 @@ blueprint:
 
     presence_option:
       name: Presence Option
-      description: Choose when the badge should be visible: when someone is home, no one is home, or always.
+      description: Choose when the badge should be visible. When someone is home, no one is home, or always.
       default: "always"
       selector:
         select:
