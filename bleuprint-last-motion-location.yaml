@@ -69,7 +69,9 @@ variables:
     {% for i in range(0, sensors | length) %}
       {% set sensor = sensors[i] %}
       {% set name = names[i] if i < names | length else "Unnamed Sensor" %}
-      {% set mapping = mapping | merge({sensor: name}) %}
+      {% if sensor and name %}
+        {% set mapping = mapping | dict(sensor, name) %}
+      {% endif %}
     {% endfor %}
     {{ mapping }}
 
