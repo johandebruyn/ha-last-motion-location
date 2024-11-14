@@ -1,20 +1,31 @@
 blueprint:
   name: Last Motion Location Badge
-  description: Display a badge with the location of the last detected motion. The badge disappears after a set time without motion and can be configured based on presence.
+  description: >
+    Displays a badge with the location of the last detected motion. The badge
+    disappears after a specified time without motion and can be configured to
+    show based on presence (e.g., someone is home, no one is home, or always).
   domain: automation
   input:
     motion_sensors:
       name: Motion Sensors
-      description: Select the motion sensors to monitor (e.g., cameras or motion detectors).
+      description: Select motion sensors to monitor and provide a display name for each.
       selector:
         entity:
           domain: binary_sensor
           device_class: motion
           multiple: true
 
+    sensor_names:
+      name: Sensor Display Names
+      description: Provide display names for each selected motion sensor.
+      default: []
+      selector:
+        object:
+          multiple: true
+
     display_duration:
       name: Display Duration
-      description: How long the badge should remain visible after the last motion is detected (in minutes).
+      description: Duration (in minutes) to keep the badge visible after the last motion.
       default: 10
       selector:
         number:
@@ -24,14 +35,14 @@ blueprint:
 
     badge_text:
       name: Badge Text
-      description: The text to display on the badge (e.g., location of the motion).
+      description: The text to display on the badge.
       default: "Last motion detected at"
       selector:
         text:
 
     presence_option:
       name: Presence Option
-      description: Choose when the badge should be visible. When someone is home, no one is home, or always.
+      description: Choose when the badge should be visible based on presence.
       default: "always"
       selector:
         select:
@@ -40,19 +51,19 @@ blueprint:
             - "someone_home"
             - "no_one_home"
 
-    person_entity:
-      name: Person Entity
-      description: The person entity to monitor for presence status.
+    tracked_persons:
+      name: Tracked Persons
+      description: Select multiple persons to track for presence status.
       selector:
         entity:
           domain: person
+          multiple: true
 
 variables:
-  motion_sensors: !input motion_sensors
   display_duration: !input display_duration
-  badge_text: !input badge_text
   presence_option: !input presence_option
-  person_entity: !input person_entity
+  badge_text: !input badge_text
+  sensor_names: !input sensor_names
 
 trigger:
   - platform: state
@@ -65,9 +76,9 @@ condition:
       {% if presence_option == 'always' %}
         true
       {% elif presence_option == 'someone_home' %}
-        {{ is_state(person_entity, 'home') }}
+        {{ expand(!input tracked_persons) | selectattr('state', 'eq', 'home') | list | count > 0 }}
       {% elif presence_option == 'no_one_home' %}
-        {{ is_state(person_entity, 'not_home') }}
+        {{ expand(!input tracked_persons) | selectattr('state', 'eq', 'home') | list | count == 0 }}
       {% else %}
         false
       {% endif %}
@@ -83,15 +94,21 @@ action:
       entity_id: input_text.last_motion_location
     data:
       value: >
-        {% set motion_map = {
-          'binary_sensor.motion_kitchen': 'Kitchen',
-          'binary_sensor.motion_living_room': 'Living Room',
-          'binary_sensor.motion_hallway': 'Hallway'
-        } %}
-        {% for sensor in motion_sensors %}
+        {% set motion_map = dict(sensor_names) %}
+        {% for sensor in trigger.entity_id %}
           {% if is_state(sensor, 'on') %}
             {{ motion_map[sensor] }}
           {% endif %}
         {% endfor %}
 
-mode: single
+# Input fields to store data
+input_text:
+  last_motion_location:
+    name: "Last Motion Location"
+    initial: ""
+
+input_datetime:
+  last_motion_time:
+    name: "Last Motion Time"
+    has_time: true
+    has_date: false
