@@ -101,6 +101,8 @@ action:
           {% endif %}
         {% endfor %}
 
+mode: single  # Ensures only one instance of this automation runs at a time
+
 # Input fields to store data
 input_text:
   last_motion_location:
