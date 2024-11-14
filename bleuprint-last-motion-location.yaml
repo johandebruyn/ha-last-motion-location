@@ -8,20 +8,19 @@ blueprint:
   input:
     motion_sensors:
       name: Motion Sensors
-      description: Select motion sensors to monitor and provide a display name for each.
+      description: Select motion sensors to monitor.
       selector:
         entity:
           domain: binary_sensor
           device_class: motion
           multiple: true
 
-    sensor_names:
+    sensor_display_names:
       name: Sensor Display Names
-      description: Provide display names for each selected motion sensor.
-      default: []
+      description: Provide display names for each selected motion sensor (comma-separated, matching the order of sensors).
+      default: ""
       selector:
-        object:
-          multiple: true
+        text
 
     display_duration:
       name: Display Duration
@@ -38,7 +37,7 @@ blueprint:
       description: The text to display on the badge.
       default: "Last motion detected at"
       selector:
-        text:
+        text
 
     presence_option:
       name: Presence Option
@@ -63,7 +62,12 @@ variables:
   display_duration: !input display_duration
   presence_option: !input presence_option
   badge_text: !input badge_text
-  sensor_names: !input sensor_names
+  sensor_display_names: !input sensor_display_names
+  sensor_name_map: >
+    {% set sensors = motion_sensors.split(',') %}
+    {% set names = sensor_display_names.split(',') %}
+    {% set mapping = dict(sensors|zip(names)) %}
+    {{ mapping }}
 
 trigger:
   - platform: state
@@ -94,10 +98,9 @@ action:
       entity_id: input_text.last_motion_location
     data:
       value: >
-        {% set motion_map = dict(sensor_names) %}
         {% for sensor in trigger.entity_id %}
           {% if is_state(sensor, 'on') %}
-            {{ motion_map[sensor] }}
+            {{ sensor_name_map[sensor] }}
           {% endif %}
         {% endfor %}
 
